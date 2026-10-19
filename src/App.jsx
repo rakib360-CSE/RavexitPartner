@@ -15,6 +15,48 @@ export default function App() {
     catch { return clone(starterData); }
   });
   const [selected, setSelected] = useState([]);
+  const [dbLoaded, setDbLoaded] = useState(false);
+  useEffect(() => { localStorage.setItem("agency-content", JSON.stringify(data)); }, [data]);
+useEffect(() => { localStorage.setItem("agency-orders", JSON.stringify(orders)); }, [orders]);
+  
+useEffect(() => {
+  let cancelled = false;
+
+  async function loadSharedContent() {
+    try {
+      if (!supabase) {
+        setDbLoaded(true);
+        return;
+      }
+
+      const { data: row, error } = await supabase
+        .from("site_content")
+        .select("content")
+        .eq("id", "main")
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!cancelled && row?.content) {
+        setData({
+          ...clone(starterData),
+          ...row.content
+        });
+      }
+    } catch (error) {
+      console.error("Failed to load shared content:", error);
+    } finally {
+      if (!cancelled) setDbLoaded(true);
+    }
+  }
+
+  loadSharedContent();
+
+  return () => {
+    cancelled = true;
+  };
+}, []);
+
   const [page, setPage] = useState("home");
   const [admin, setAdmin] = useState(false);
   const [tab, setTab] = useState("brand");
